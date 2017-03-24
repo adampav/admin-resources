@@ -1,9 +1,30 @@
 from app import db
 
-class User(db.Model):
+
+class Device(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nickname = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
 
     def __repr__(self):
         return '<User %r>' % self.nickname
+
+
+class IpAddress(db.model):
+    pass
+
+
+class Network(db.Model):
+    pass
+
+
+class PatchPanel(db.Model):
+    pass
+
+
+class Server(db.model):
+    pass
+
+
+class VM(db.model):
+    pass
