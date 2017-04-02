@@ -6,8 +6,14 @@ import re
 from datetime import datetime, timedelta
 from flask import jsonify, abort, json, request
 
-episodes_p = []
-shows_p = []
+query_params = {
+    'vms': [],
+    'servers': [],
+    'network': [],
+    'patchpanel': [],
+    'devices': [],
+}
+
 
 
 @app.route('/api/vms', strict_slashes=False)
@@ -74,4 +80,23 @@ def get_patchpanel():
 
 @app.route('/api/devices', strict_slashes=False)
 def get_devices():
-    pass
+    try:
+        inputJSON = request.json
+    except BadRequest, e:
+        msg = "ERROR: Invalid JSON"
+        return jsonify({'error': msg}), 400
+
+
+@app.route('/api/devices/query', strict_slashes=False)
+def get_devices():
+    try:
+        inputJSON = request.json
+    except BadRequest, e:
+        msg = "ERROR: Invalid JSON"
+        return jsonify({'error': msg}), 400
+
+    if inputJSON:
+        for val in query_params['devices']:
+            if (val in inputJSON) and (type(inputJSON[val]) != unicode):
+                return jsonify({'error': 'Bad Request on field %s' % 'showTitle'}), 400
+
