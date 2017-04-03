@@ -15,7 +15,6 @@ query_params = {
 }
 
 
-
 @app.route('/api/vms', strict_slashes=False)
 def get_vms():
     pass
@@ -56,24 +55,43 @@ def get_server_vm(server_id, vm_id):
     pass
 
 
-@app.route('/api/servers/<int:server_id>/vms/<int:vm_id>', strict_slashes=False)
-def get_server_vm(server_id, vm_id):
-    pass
-
-
 @app.route('/api/servers/<int:server_id>/vms/query', strict_slashes=False)
-def get_server_vm(server_id, vm_id):
+def get_server_vms_query(server_id, vm_id):
     pass
 
 
-@app.route('/api/network', strict_slashes=False)
-def get_network():
+@app.route('/api/networks', strict_slashes=False)
+def get_networks():
+    pass
+    # return jsonify({'episodes': episodes})
+
+
+@app.route('/api/networks/<int:network_id>', strict_slashes=False)
+def get_network(network_id):
+    pass
+    # return jsonify({'episodes': episodes})
+
+
+@app.route('/api/networks/query', strict_slashes=False)
+def get_networks_query():
     pass
     # return jsonify({'episodes': episodes})
 
 
 @app.route('/api/patchpanel', strict_slashes=False)
-def get_patchpanel():
+def get_patchpanels():
+    pass
+    # return jsonify({'episodes': })
+
+
+@app.route('/api/patchpanel/<int:patchpanel_port>', strict_slashes=False)
+def get_patchpanel(patchpanel_port):
+    pass
+    # return jsonify({'episodes': })
+
+
+@app.route('/api/patchpanel/query', strict_slashes=False)
+def get_patchpanels_query():
     pass
     # return jsonify({'episodes': })
 
@@ -87,8 +105,17 @@ def get_devices():
         return jsonify({'error': msg}), 400
 
 
+@app.route('/api/devices/<int:device_id>', strict_slashes=False)
+def get_device(device_id):
+    try:
+        inputJSON = request.json
+    except BadRequest, e:
+        msg = "ERROR: Invalid JSON"
+        return jsonify({'error': msg}), 400
+
+
 @app.route('/api/devices/query', strict_slashes=False)
-def get_devices():
+def get_devices_query():
     try:
         inputJSON = request.json
     except BadRequest, e:
