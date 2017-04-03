@@ -62,3 +62,4 @@ class VM(db.model):
     ram = db.Column(db.String(64))
     cpu = db.Column(db.String(64))
     network = db.Column(db.String(64))
+    server_id = db.Column(db.Integer, db.ForeignKey('server.id'))
