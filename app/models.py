@@ -8,9 +8,6 @@ class Device(db.Model):
     management_ip = db.Column(db.String(32))
     device_ports = db.relationship('DevicePorts', backref='device', lazy='dynamic')
 
-    def __repr__(self):
-        return '<User %r>' % self.nickname
-
 
 class DevicePorts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,12 +17,20 @@ class DevicePorts(db.Model):
     ip = db.Column(db.String(32))
 
 
-class IpAddress(db.model):
-    pass
+class IpAddress(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ip = db.Column(db.String(32))
+    network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
+
 
 
 class Network(db.Model):
-    pass
+    id = db.Column(db.Integer, primary_key=True)
+    subnet = db.Column(db.String(24))
+    vlan = db.Column(db.Integer)
+    addresses = db.relationship('IpAddress', backref='network', lazy='dynamic')
+    server_networks = db.relationship('Server', backref='server', lazy='dynamic')
+    vm_networks = db.relationship('VM', backref='vm', lazy='dynamic')
 
 
 class PatchPanel(db.Model):
@@ -34,7 +39,7 @@ class PatchPanel(db.Model):
     connected_to = db.Column(db.String(64))
 
 
-class Server(db.model):
+class Server(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(64))
     serial_number = db.Column(db.String(64))
@@ -49,9 +54,10 @@ class Server(db.model):
     cpu = db.Column(db.String(64))
     network = db.Column(db.String(64))
     server_vms = db.relationship('VM', backref='server', lazy='dynamic')
+    network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
 
 
-class VM(db.model):
+class VM(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(64))
     responsible_person = db.Column(db.String(64))
@@ -63,3 +69,4 @@ class VM(db.model):
     cpu = db.Column(db.String(64))
     network = db.Column(db.String(64))
     server_id = db.Column(db.Integer, db.ForeignKey('server.id'))
+    network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
