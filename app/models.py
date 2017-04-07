@@ -1,17 +1,18 @@
 from app import db
 
 
-class Device(db.Model):
+class NetDevice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vendor = db.Column(db.String(16))
+    device_type = db.Column(db.String(8))
     serial_number = db.Column(db.String(64))
     management_ip = db.Column(db.String(32))
-    device_ports = db.relationship('DevicePorts', backref='device', lazy='dynamic')
+    # device_ports = db.relationship('NetDevicePorts', backref='device', lazy='dynamic')
 
 
-class DevicePorts(db.Model):
+class NetDevicePorts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.Integer, db.ForeignKey('device.id'))
+    device_id = db.Column(db.Integer, db.ForeignKey('NetDevice.id'))
     connected_to = db.Column(db.String(64))
     vlan = db.Column(db.Integer)
     ip = db.Column(db.String(32))
@@ -21,7 +22,6 @@ class IpAddress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(32))
     network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
-
 
 
 class Network(db.Model):
