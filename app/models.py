@@ -10,6 +10,16 @@ class NetDevice(db.Model):
     management_ip = db.Column(db.String(32))
     device_ports = db.relationship('NetDevicePorts', backref='device', lazy='dynamic')
 
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'vendor': self.vendor,
+            'device_type': self.device_type,
+            'serial_number': self.serial_number,
+            'management_ip': self.management_ip,
+        }
+
 
 class NetDevicePorts(db.Model):
     __tablename__ = 'NetDevicePorts'
