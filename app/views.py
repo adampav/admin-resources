@@ -3,25 +3,29 @@ from app import db
 from flask import render_template
 from werkzeug.exceptions import *
 import re
-from models import NetDevice
+from models import NetDevice, NetDevicePorts
 
 from datetime import datetime, timedelta
 from flask import jsonify, abort, json, request
 
+# Params for each model that are expected
 query_params = {
     'vms': [],
     'servers': [],
     'network': [],
     'patchpanel': [],
-    'netdevices': ['vendor', 'device_type', 'serial_number', "management_ip"],
+    'netdevices': ['vendor', 'device_type', 'serial_number', 'management_ip'],
+    'netdeviceports': ['device_id', 'connected_to', 'vlan', 'ip']
 }
 
+# All model values returned
 model_params = {
     'vms': [],
     'servers': [],
     'network': [],
     'patchpanel': [],
-    'netdevices': ['id', 'vendor', 'device_type', 'serial_number', "management_ip"],
+    'netdevices': ['id', 'vendor', 'device_type', 'serial_number', 'management_ip'],
+    'netdeviceports': ['id', 'device_id', 'connected_to', 'vlan', 'ip']
 }
 
 
@@ -111,13 +115,8 @@ def get_netdevices():
     if request.method == 'GET':
         devices = NetDevice.query.all()
         results = []
-        for device in devices:
-            dc = {}
-            for param in model_params['netdevices']:
-                dc[param] = device.__getattribute__(param)
-            results.append(dc)
 
-        return jsonify({"result": results})
+        return jsonify({"result": [device.serialize for device in devices]})
 
     if request.method == 'POST':
 
@@ -131,6 +130,7 @@ def get_netdevices():
         # return jsonify({"result": input_json})
 
         # Check JSON fields
+
         if input_json:
             # TODO perform the checks for all fields
             new_nd = NetDevice()
@@ -141,47 +141,10 @@ def get_netdevices():
                     return jsonify({'error': 'Bad JSON field %s is needed' % param}), 400
                 else:
                     new_nd.__setattr__(param, input_json[param])
-            new_nd.device_ports.append()
-            print new_nd.device_type
+
             db.session.add(new_nd)
             db.session.commit()
             return jsonify({'result': input_json})
-        #
-        #     print new
-        # #     if 'episodeTitle' in inputJSON:
-        #         episodes = [episode for episode in episodes
-        #                     if re.search(inputJSON['episodeTitle'], episode['episodeTitle'], re.IGNORECASE)]
-        #
-        #     if 'idShow' in inputJSON:
-        #         episodes = [episode for episode in episodes if episode['idShow'] == int(inputJSON['idShow'])]
-        #
-        #     if 'season' in inputJSON:
-        #         episodes = [episode for episode in episodes if episode['season'] == int(inputJSON['season'])]
-        #
-        #     if 'episode' in inputJSON:
-        #         episodes = [episode for episode in episodes if episode['episode'] == int(inputJSON['episode'])]
-        #
-        #     if 'dateReleased' in inputJSON:
-        #         a = datetime.strptime(inputJSON['dateReleased'], "%Y-%m-%d")
-        #         episodes = [episode for episode in episodes if episode['dateReleased'] and
-        #                     a < datetime.strptime(episode['dateReleased'], "%Y-%m-%d %H:%M:%S")]
-        #
-        #     if 'dateAdded' in inputJSON:
-        #         a = datetime.strptime(inputJSON['dateAdded'], "%Y-%m-%d")
-        #         episodes = [episode for episode in episodes if episode['dateAdded'] and
-        #                     a < datetime.strptime(episode['dateAdded'], "%Y-%m-%d %H:%M:%S")]
-        #
-        #     if 'lastPlayed' in inputJSON:
-        #         a = datetime.strptime(inputJSON['lastPlayed'], "%Y-%m-%d")
-        #         episodes = [episode for episode in episodes if episode['lastPlayed'] and
-        #                     a < datetime.strptime(episode['lastPlayed'], "%Y-%m-%d %H:%M:%S")]
-        #
-        # if len(episodes) == 0:
-        #     jsonify({'msg': 'No Results found'})
-        #
-        # return jsonify({'episodes': episodes})
-
-
 
 
 @app.route('/api/netdevices/<int:device_id>', strict_slashes=False)
@@ -206,3 +169,59 @@ def get_netdevices_query():
             if (val in inputJSON) and (type(inputJSON[val]) != unicode):
                 return jsonify({'error': 'Bad Request on field %s' % 'showTitle'}), 400
 
+
+@app.route('/api/netdevices/<int:device_id>/ports', strict_slashes=False, methods=['GET', 'POST'])
+def get_netdevice_ports(device_id):
+    if request.method == 'GET':
+        device = NetDevice.query.get(device_id)
+
+        if not device:
+            abort(404)
+
+        device_ports = device.device_ports.all()
+
+        results = []
+
+        for dport in device_ports:
+            dp = {}
+            for param in model_params['netdeviceports']:
+                dp[param] = dport.__getattribute__(param)
+            results.append(dp)
+
+        return jsonify({"result": results})
+
+    if request.method == 'POST':
+        # Validate JSON
+        try:
+            input_json = request.json
+        except BadRequest, e:
+            msg = "ERROR: Invalid JSON"
+            return jsonify({'error': msg}), 400
+
+        # return jsonify({"result": input_json})
+
+        # Check JSON fields
+        if input_json:
+            new_nd_ports = NetDevicePorts()
+            if 'device_id' not in input_json or (input_json['device_id'] != str(device_id)):
+                return jsonify({'error': 'Bad JSON Field %s not present or not matching with URL' % 'device_id'}), 400
+
+            for param in query_params['netdeviceports']:
+                if (param in input_json) and (type(input_json[param]) != unicode):
+                    return jsonify({'error': 'Bad Request on field %s' % param}), 400
+                elif param not in input_json:
+                    return jsonify({'error': 'Bad JSON field %s is needed' % param}), 400
+                else:
+                    new_nd_ports.__setattr__(param, input_json[param])
+
+            db.session.add(new_nd_ports)
+            db.session.commit()
+
+            inserted = NetDevicePorts.query.order_by('-id').first()
+            results = {}
+            for param in model_params['netdeviceports']:
+                results[param] = inserted.__getattribute__(param)
+
+            return jsonify({"result": results})
+
+        return jsonify({'error': "no JSON"}), 400
