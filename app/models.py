@@ -29,6 +29,16 @@ class NetDevicePorts(db.Model):
     vlan = db.Column(db.Integer)
     ip = db.Column(db.String(32))
 
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'device_id': self.device_id,
+            'connected_to': self.connected_to,
+            'vlan': self.vlan,
+            'ip': self.ip,
+        }
+
 
 class IpAddress(db.Model):
     __tablename__ = 'IpAddress'
