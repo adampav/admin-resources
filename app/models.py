@@ -2,15 +2,17 @@ from app import db
 
 
 class NetDevice(db.Model):
+    __tablename__ = 'NetDevice'
     id = db.Column(db.Integer, primary_key=True)
     vendor = db.Column(db.String(16))
     device_type = db.Column(db.String(8))
     serial_number = db.Column(db.String(64))
     management_ip = db.Column(db.String(32))
-    # device_ports = db.relationship('NetDevicePorts', backref='device', lazy='dynamic')
+    device_ports = db.relationship('NetDevicePorts', backref='device', lazy='dynamic')
 
 
 class NetDevicePorts(db.Model):
+    __tablename__ = 'NetDevicePorts'
     id = db.Column(db.Integer, primary_key=True)
     device_id = db.Column(db.Integer, db.ForeignKey('NetDevice.id'))
     connected_to = db.Column(db.String(64))
@@ -19,27 +21,31 @@ class NetDevicePorts(db.Model):
 
 
 class IpAddress(db.Model):
+    __tablename__ = 'IpAddress'
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(32))
-    network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
+    network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
 
 
 class Network(db.Model):
+    __tablename__ = 'Network'
     id = db.Column(db.Integer, primary_key=True)
     subnet = db.Column(db.String(24))
     vlan = db.Column(db.Integer)
-    addresses = db.relationship('IpAddress', backref='network', lazy='dynamic')
-    server_networks = db.relationship('Server', backref='server', lazy='dynamic')
-    vm_networks = db.relationship('VM', backref='vm', lazy='dynamic')
+    ip_networks = db.relationship('IpAddress', backref='network_ip', lazy='dynamic')
+    server_networks = db.relationship('Server', backref='network_server', lazy='dynamic')
+    vm_networks = db.relationship('VirtualMachine', backref='network_vms', lazy='dynamic')
 
 
 class PatchPanel(db.Model):
+    __tablename__ = 'PatchPanel'
     patch_id = db.Column(db.String(16), primary_key=True)
     description = db.Column(db.String(64))
     connected_to = db.Column(db.String(64))
 
 
 class Server(db.Model):
+    __tablename__ = 'Server'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(64))
     serial_number = db.Column(db.String(64))
@@ -53,11 +59,12 @@ class Server(db.Model):
     ram = db.Column(db.String(64))
     cpu = db.Column(db.String(64))
     network = db.Column(db.String(64))
-    server_vms = db.relationship('VM', backref='server', lazy='dynamic')
-    network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
+    server_vms = db.relationship('VirtualMachine', backref='server', lazy='dynamic')
+    network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
 
 
-class VM(db.Model):
+class VirtualMachine(db.Model):
+    __tablename__ = 'VirtualMachine'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(64))
     responsible_person = db.Column(db.String(64))
@@ -68,5 +75,5 @@ class VM(db.Model):
     ram = db.Column(db.String(64))
     cpu = db.Column(db.String(64))
     network = db.Column(db.String(64))
-    server_id = db.Column(db.Integer, db.ForeignKey('server.id'))
-    network_id = db.Column(db.Integer, db.ForeignKey('network.id'))
+    server_id = db.Column(db.Integer, db.ForeignKey('Server.id'))
+    network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))

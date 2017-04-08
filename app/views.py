@@ -21,7 +21,7 @@ model_params = {
     'servers': [],
     'network': [],
     'patchpanel': [],
-    'netdevices': ['id','vendor', 'device_type', 'serial_number', "management_ip"],
+    'netdevices': ['id', 'vendor', 'device_type', 'serial_number', "management_ip"],
 }
 
 
@@ -133,16 +133,17 @@ def get_netdevices():
         # Check JSON fields
         if input_json:
             # TODO perform the checks for all fields
-            new = NetDevice()
+            new_nd = NetDevice()
             for param in query_params['netdevices']:
                 if (param in input_json) and (type(input_json[param]) != unicode):
                     return jsonify({'error': 'Bad Request on field %s' % param}), 400
                 elif param not in input_json:
                     return jsonify({'error': 'Bad JSON field %s is needed' % param}), 400
                 else:
-                    new.__setattr__(param, input_json[param])
-            print new.device_type
-            db.session.add(new)
+                    new_nd.__setattr__(param, input_json[param])
+            new_nd.device_ports.append()
+            print new_nd.device_type
+            db.session.add(new_nd)
             db.session.commit()
             return jsonify({'result': input_json})
         #
