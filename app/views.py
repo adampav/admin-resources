@@ -20,167 +20,119 @@ query_params = {
     'netdeviceports': ['device_id', 'connected_to', 'vlan', 'ip']
 }
 
-# All model values returned
-model_params = {
-    'vms': [],
-    'servers': [],
-    'network': [],
-    'patchpanel': [],
-    'netdevices': ['id', 'vendor', 'device_type', 'serial_number', 'management_ip'],
-    'netdeviceports': ['id', 'device_id', 'connected_to', 'vlan', 'ip']
-}
 
-
-@app.route('/api/vms', strict_slashes=False)
-def get_vms():
+class ServerAPI(Resource):
     pass
 
 
-@app.route('/api/vms/<int:vm_id>', strict_slashes=False)
-def get_vm(vm_id):
+class ServerListAPI(Resource):
     pass
 
 
-@app.route('/api/vms/query', strict_slashes=False)
-def get_vms_query():
+class VirtualMachineAPI(Resource):
     pass
 
 
-@app.route('/api/servers', strict_slashes=False)
-def get_servers():
+class VirtualMachineListAPI(Resource):
     pass
 
 
-@app.route('/api/servers/<int:server_id>', strict_slashes=False)
-def get_server(server_id):
+class NetworkAPI(Resource):
     pass
 
 
-@app.route('/api/servers/query', strict_slashes=False)
-def get_servers_query():
+class NetworkListAPI(Resource):
     pass
 
 
-@app.route('/api/servers/<int:server_id>/vms', strict_slashes=False)
-def get_server_vms(server_id):
+class PatchPanelAPI(Resource):
     pass
 
 
-@app.route('/api/servers/<int:server_id>/vms/<int:vm_id>', strict_slashes=False)
-def get_server_vm(server_id, vm_id):
+class PatchPanelListAPI(Resource):
     pass
 
 
-@app.route('/api/servers/<int:server_id>/vms/query', strict_slashes=False)
-def get_server_vms_query(server_id, vm_id):
-    pass
+class NetDevicePortAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('device_id', type=int, location='json')
+        self.reqparse.add_argument('connected_to', type=str, location='json')
+        self.reqparse.add_argument('vlan', type=int, location='json')
+        self.reqparse.add_argument('ip', type=str, location='json')
+        super(NetDevicePortAPI, self).__init__()
 
-
-@app.route('/api/networks', strict_slashes=False)
-def get_networks():
-    pass
-    # return jsonify({'episodes': episodes})
-
-
-@app.route('/api/networks/<int:network_id>', strict_slashes=False)
-def get_network(network_id):
-    pass
-    # return jsonify({'episodes': episodes})
-
-
-@app.route('/api/networks/query', strict_slashes=False)
-def get_networks_query():
-    pass
-    # return jsonify({'episodes': episodes})
-
-
-@app.route('/api/patchpanel', strict_slashes=False)
-def get_patchpanels():
-    pass
-    # return jsonify({'episodes': })
-
-
-@app.route('/api/patchpanel/<int:patchpanel_port>', strict_slashes=False)
-def get_patchpanel(patchpanel_port):
-    pass
-    # return jsonify({'episodes': })
-
-
-@app.route('/api/patchpanel/query', strict_slashes=False)
-def get_patchpanels_query():
-    pass
-    # return jsonify({'episodes': })
-
-
-@app.route('/api/netdevices/query', strict_slashes=False)
-def get_netdevices_query():
-    try:
-        inputJSON = request.json
-    except BadRequest, e:
-        msg = "ERROR: Invalid JSON"
-        return jsonify({'error': msg}), 400
-
-    if inputJSON:
-        for val in query_params['devices']:
-            if (val in inputJSON) and (type(inputJSON[val]) != unicode):
-                return jsonify({'error': 'Bad Request on field %s' % 'showTitle'}), 400
-
-
-@app.route('/api/netdevices/<int:device_id>/ports', strict_slashes=False, methods=['GET', 'POST'])
-def get_netdevice_ports(device_id):
-    if request.method == 'GET':
+    def get(self, device_id, port_id):
         device = NetDevice.query.get(device_id)
-
         if not device:
-            abort(404)
+            return {'error': 'No such item'}, 404
 
-        device_ports = device.device_ports.all()
+        port = device.device_ports.filter("id=%s" % str(port_id)).first()
+        if not port:
+            return {'error': 'No such item'}, 404
 
-        results = []
+        return {'result': port.serialize}, 200
 
-        for dport in device_ports:
-            dp = {}
-            for param in model_params['netdeviceports']:
-                dp[param] = dport.__getattribute__(param)
-            results.append(dp)
+    def put(self, device_id):
+        device = NetDevice.query.get(device_id)
+        if not device:
+            return {'error': 'No such item'}, 404
 
-        return jsonify({"result": results})
+        args = self.reqparse.parse_args(strict=True)
 
-    if request.method == 'POST':
-        # Validate JSON
-        try:
-            input_json = request.json
-        except BadRequest, e:
-            msg = "ERROR: Invalid JSON"
-            return jsonify({'error': msg}), 400
+        for k, v in args.iteritems():
+            if v and (device.__getattribute__(k) != v):
+                device.__setattr__(k, v)
 
-        # return jsonify({"result": input_json})
+        db.session.commit()
 
-        # Check JSON fields
-        if input_json:
-            new_nd_ports = NetDevicePorts()
-            if 'device_id' not in input_json or (input_json['device_id'] != str(device_id)):
-                return jsonify({'error': 'Bad JSON Field %s not present or not matching with URL' % 'device_id'}), 400
+        return {'results': device.serialize}, 200
 
-            for param in query_params['netdeviceports']:
-                if (param in input_json) and (type(input_json[param]) != unicode):
-                    return jsonify({'error': 'Bad Request on field %s' % param}), 400
-                elif param not in input_json:
-                    return jsonify({'error': 'Bad JSON field %s is needed' % param}), 400
-                else:
-                    new_nd_ports.__setattr__(param, input_json[param])
+    def delete(self, device_id):
+        device = NetDevice.query.get(device_id)
+        if not device:
+            return {'error': 'No such item'}, 404
 
-            db.session.add(new_nd_ports)
-            db.session.commit()
+        db.session.delete(device)
+        db.session.commit()
 
-            inserted = NetDevicePorts.query.order_by('-id').first()
-            results = {}
-            for param in model_params['netdeviceports']:
-                results[param] = inserted.__getattribute__(param)
+        return {'deleted': device.serialize}, 200
 
-            return jsonify({"result": results})
 
-        return jsonify({'error': "no JSON"}), 400
+class NetDevicePortListAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('device_id', type=int, location='json')
+        self.reqparse.add_argument('connected_to', type=str, location='json')
+        self.reqparse.add_argument('vlan', type=int, location='json')
+        self.reqparse.add_argument('ip', type=str, location='json')
+        super(NetDevicePortListAPI, self).__init__()
+
+    def get(self, device_id):
+        device = NetDevice.query.get(device_id)
+        if not device:
+            return {'error': 'No such item'}, 404
+
+        ports = device.device_ports.all()
+
+        return {'result': [port.serialize for port in ports]}, 200
+
+    def post(self):
+        args = self.reqparse.parse_args(strict=True)
+        new_nd = NetDevice()
+
+        for k, v in args.iteritems():
+            new_nd.__setattr__(k, v)
+
+        db.session.add(new_nd)
+        db.session.commit()
+
+        inserted = NetDevice.query.order_by('-id').first()
+
+        if not inserted:
+            return {'error': 'No such item'}, 404
+
+        return {'results': inserted.serialize}, 200
 
 
 class NetDeviceAPI(Resource):
@@ -255,7 +207,15 @@ class NetDeviceListAPI(Resource):
 
         return {'results': inserted.serialize}, 200
 
-
+api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
+api.add_resource(ServerListAPI, '/api/servers')
+api.add_resource(VirtualMachineAPI, '/api/vms/<int:vm_id>')
+api.add_resource(VirtualMachineListAPI, '/api/vms')
+api.add_resource(NetworkAPI, '/api/networks/<int:network_id>')
+api.add_resource(NetworkListAPI, '/api/networks')
+api.add_resource(PatchPanelAPI, '/api/patchpanels/<int:patch_id>')
+api.add_resource(PatchPanelListAPI, '/api/patchpanels')
 api.add_resource(NetDeviceAPI, '/api/netdevices/<int:device_id>')
 api.add_resource(NetDeviceListAPI, '/api/netdevices')
-
+api.add_resource(NetDevicePortAPI, '/api/netdevices/<int:device_id>/ports/<int:port_id>')
+api.add_resource(NetDevicePortListAPI, '/api/netdevices/<int:device_id>/ports')
