@@ -646,7 +646,8 @@ class IpAddressQueryAPI(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('ip', type=str, location='json')
-        self.reqparse.add_argument('network_id', type=str, location='json')
+        self.reqparse.add_argument('network_id', type=int, location='json')
+        self.reqparse.add_argument('hostname', type=str, location='json')
         super(IpAddressQueryAPI, self).__init__()
 
     def get(self):
@@ -654,9 +655,20 @@ class IpAddressQueryAPI(Resource):
         args = self.reqparse.parse_args(strict=True)
         networks = []
         if 'ip' in args and args['ip']:
-            ips = [ip for ip in ips if re.search(args['ip'], ip.ip, re.IGNORECASE)]
+            ips = [ip for ip in ips if ip.ip and re.search(args['ip'], ip.ip, re.IGNORECASE)]
             # TODO consider whether to fix this
-            networks = [ip.network_ip for ip in ips if ip.network_ip.id not in networks]
+
+        if 'hostname' in args and args['hostname']:
+            ips = [ip for ip in ips if ip.hostname and re.search(args['hostname'], ip.hostname, re.IGNORECASE)]
+
+        if 'network_id' in args and args['network_id']:
+            print args['network_id']
+            ips = [ip for ip in ips if ip.network_id and args['network_id'] == ip.network_id]
+
+        for ip in ips:
+            if ip.network_ip not in networks:
+                networks.append(ip.network_ip)
+
         return {'results': {'ips': [ip.serialize for ip in ips],
                             'network': [network.serialize for network in networks]}}, 200
 
