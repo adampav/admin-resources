@@ -565,21 +565,6 @@ class NetDeviceListAPI(Resource):
 
         return {'results': inserted.serialize}, 200
 
-api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
-api.add_resource(ServerListAPI, '/api/servers')
-api.add_resource(VirtualMachineAPI, '/api/servers/<int:server_id>/vms/<int:vm_id>')
-api.add_resource(VirtualMachineListAPI, '/api/servers/<int:server_id>/vms')
-api.add_resource(IpAddressAPI, '/api/networks/<int:network_id>/ips/<int:address_id>')
-api.add_resource(IpAddressListAPI, '/api/networks/<int:network_id>/ips')
-api.add_resource(NetworkAPI, '/api/networks/<int:network_id>')
-api.add_resource(NetworkListAPI, '/api/networks')
-api.add_resource(PatchPanelAPI, '/api/patchpanels/<int:patch_id>')
-api.add_resource(PatchPanelListAPI, '/api/patchpanels')
-api.add_resource(NetDeviceAPI, '/api/netdevices/<int:device_id>')
-api.add_resource(NetDeviceListAPI, '/api/netdevices')
-api.add_resource(NetDevicePortAPI, '/api/netdevices/<int:device_id>/ports/<int:port_id>')
-api.add_resource(NetDevicePortListAPI, '/api/netdevices/<int:device_id>/ports')
-
 
 class ServerQueryAPI(Resource):
     def __init__(self):
@@ -635,3 +620,27 @@ class IpAddressQueryAPI(Resource):
 
     def get(self):
         pass
+
+
+api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
+api.add_resource(ServerListAPI, '/api/servers')
+api.add_resource(VirtualMachineAPI, '/api/servers/<int:server_id>/vms/<int:vm_id>')
+api.add_resource(VirtualMachineListAPI, '/api/servers/<int:server_id>/vms')
+api.add_resource(IpAddressAPI, '/api/networks/<int:network_id>/ips/<int:address_id>')
+api.add_resource(IpAddressListAPI, '/api/networks/<int:network_id>/ips')
+api.add_resource(NetworkAPI, '/api/networks/<int:network_id>')
+api.add_resource(NetworkListAPI, '/api/networks')
+api.add_resource(PatchPanelAPI, '/api/patchpanels/<int:patch_id>')
+api.add_resource(PatchPanelListAPI, '/api/patchpanels')
+api.add_resource(NetDeviceAPI, '/api/netdevices/<int:device_id>')
+api.add_resource(NetDeviceListAPI, '/api/netdevices')
+api.add_resource(NetDevicePortAPI, '/api/netdevices/<int:device_id>/ports/<int:port_id>')
+api.add_resource(NetDevicePortListAPI, '/api/netdevices/<int:device_id>/ports')
+
+api.add_resource(ServerQueryAPI, '/api/servers/query')
+api.add_resource(VirtualMachineQueryAPI, '/api/vms/query')
+api.add_resource(PatchpanelQueryAPI, '/api/patchpanels/query')
+api.add_resource(NetDeviceQueryAPI, '/api/netdevices/query')
+api.add_resource(NetDevicePortQueryAPI, '/api/netdeviceports/query')
+api.add_resource(NetworkQueryAPI, '/api/networks/query')
+api.add_resource(IpAddressQueryAPI, '/api/ips/query')
