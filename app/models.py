@@ -56,12 +56,30 @@ class Network(db.Model):
     server_networks = db.relationship('Server', backref='network_server', lazy='dynamic')
     vm_networks = db.relationship('VirtualMachine', backref='network_vms', lazy='dynamic')
 
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'subnet': self.subnet,
+            'vlan': self.vlan,
+        }
+
 
 class PatchPanel(db.Model):
     __tablename__ = 'PatchPanel'
     patch_id = db.Column(db.String(16), primary_key=True)
     description = db.Column(db.String(64))
+    location = db.Column(db.String(64))
     connected_to = db.Column(db.String(64))
+
+    @property
+    def serialize(self):
+        return {
+            'patch_id': self.patch_id,
+            'description': self.description,
+            'location': self.location,
+            'connected_to': self.connected_to,
+        }
 
 
 class Server(db.Model):
