@@ -647,6 +647,7 @@ class IpAddressQueryAPI(Resource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('ip', type=str, location='json')
         self.reqparse.add_argument('network_id', type=int, location='json')
+        self.reqparse.add_argument('vlan', type=int, location='json')
         self.reqparse.add_argument('hostname', type=str, location='json')
         super(IpAddressQueryAPI, self).__init__()
 
@@ -662,8 +663,10 @@ class IpAddressQueryAPI(Resource):
             ips = [ip for ip in ips if ip.hostname and re.search(args['hostname'], ip.hostname, re.IGNORECASE)]
 
         if 'network_id' in args and args['network_id']:
-            print args['network_id']
             ips = [ip for ip in ips if ip.network_id and args['network_id'] == ip.network_id]
+
+        if 'vlan' in args and args['vlan']:
+            ips = [ip for ip in ips if ip.network_ip.vlan and args['vlan'] == ip.network_ip.vlan]
 
         for ip in ips:
             if ip.network_ip not in networks:
