@@ -52,7 +52,6 @@ class IpAddress(db.Model):
             'id': self.id,
             'ip': self.ip,
             'network_id': self.network_id,
-            'network_ip': self.network_ip.serialize
         }
 
 
