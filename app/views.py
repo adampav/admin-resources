@@ -3,7 +3,7 @@ from app import db
 from flask_restful import Api, Resource, reqparse, fields, marshal
 from werkzeug.exceptions import *
 import re
-from models import NetDevice, NetDevicePorts, PatchPanel, Network
+from models import NetDevice, NetDevicePorts, PatchPanel, Network, IpAddress
 
 from datetime import datetime, timedelta
 from flask import jsonify, abort, json, request
@@ -37,12 +37,165 @@ class VirtualMachineListAPI(Resource):
     pass
 
 
+class IpAddressAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('ip', type=str, location='json')
+        self.reqparse.add_argument('network_id', type=int, location='json')
+        super(IpAddressAPI, self).__init__()
+
+    def get(self, network_id, address_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        ip = network.ip_networks.filter("id=%s" % str(address_id)).first()
+
+        if not ip:
+            return {'error': 'No such item'}, 404
+
+        return {'result': network.serialize}, 200
+
+    def put(self, network_id, address_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        ip = network.ip_networks.filter("id=%s" % str(address_id)).first()
+
+        if not ip:
+            return {'error': 'No such item'}, 404
+
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if v and (network.__getattribute__(k) != v):
+                ip.__setattr__(k, v)
+
+        db.session.commit()
+
+        return {'results': ip.serialize}, 200
+
+    def delete(self, network_id, address_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        ip = network.ip_networks.filter("id=%s" % str(address_id)).first()
+
+        if not ip:
+            return {'error': 'No such item'}, 404
+
+        db.session.delete(network)
+        db.session.commit()
+
+        return {'deleted': network.serialize}, 200
+
+
+class IpAddressListAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('ip', type=str, location='json', required=True)
+        self.reqparse.add_argument('network_id', type=int, location='json', required=True)
+        super(IpAddressListAPI, self).__init__()
+
+    def get(self, network_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        ips = network.ip_networks.all()
+
+        return {"result": [ip.serialize for ip in ips]}
+
+    def post(self, network_id):
+        args = self.reqparse.parse_args(strict=True)
+        new_ip = IpAddress()
+
+        if args['network_id'] != network_id:
+            return {'error': 'Incompatible URL and device_id ForeignKey'}, 404
+
+        for k, v in args.iteritems():
+            new_ip.__setattr__(k, v)
+
+        db.session.add(new_ip)
+        db.session.commit()
+
+        inserted = IpAddress.query.order_by('-id').first()
+
+        if not inserted:
+            return {'error': 'No such item'}, 404
+
+        return {'results': inserted.serialize}, 200
+
+
 class NetworkAPI(Resource):
-    pass
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('subnet', type=str, location='json')
+        self.reqparse.add_argument('vlan', type=int, location='json')
+        super(NetworkAPI, self).__init__()
+
+    def get(self, network_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        return {'result': network.serialize}, 200
+
+    def put(self, network_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if v and (network.__getattribute__(k) != v):
+                network.__setattr__(k, v)
+
+        db.session.commit()
+
+        return {'results': network.serialize}, 200
+
+    def delete(self, network_id):
+        network = Network.query.get(network_id)
+        if not network:
+            return {'error': 'No such item'}, 404
+
+        db.session.delete(network)
+        db.session.commit()
+
+        return {'deleted': network.serialize}, 200
 
 
 class NetworkListAPI(Resource):
-    pass
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('subnet', type=str, location='json', required=True)
+        self.reqparse.add_argument('vlan', type=int, location='json', required=True)
+        super(NetworkListAPI, self).__init__()
+
+    def get(self):
+        networks = Network.query.all()
+        return {"result": [network.serialize for network in networks]}
+
+    def post(self):
+        args = self.reqparse.parse_args(strict=True)
+        new_network = Network()
+
+        for k, v in args.iteritems():
+            new_network.__setattr__(k, v)
+
+        db.session.add(new_network)
+        db.session.commit()
+
+        inserted = Network.query.order_by('-id').first()
+
+        if not inserted:
+            return {'error': 'No such item'}, 404
+
+        return {'results': inserted.serialize}, 200
 
 
 class PatchPanelAPI(Resource):
@@ -285,6 +438,8 @@ api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
 api.add_resource(ServerListAPI, '/api/servers')
 api.add_resource(VirtualMachineAPI, '/api/vms/<int:vm_id>')
 api.add_resource(VirtualMachineListAPI, '/api/vms')
+api.add_resource(IpAddress, '/api/networks/<int:network_id>/ips/<int:address_id>')
+api.add_resource(IpAddressListAPI, '/api/networks/<int:network_id>/ips')
 api.add_resource(NetworkAPI, '/api/networks/<int:network_id>')
 api.add_resource(NetworkListAPI, '/api/networks')
 api.add_resource(PatchPanelAPI, '/api/patchpanels/<int:patch_id>')
