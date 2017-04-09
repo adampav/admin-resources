@@ -615,7 +615,15 @@ class NetDeviceQueryAPI(Resource):
         super(NetDeviceQueryAPI, self).__init__()
 
     def get(self):
-        pass
+        devices = NetDevice.query.all()
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if k in args and v:
+                devices = [device for device in devices if device.__getattribute__(k) and
+                           re.search(v, device.__getattribute__(k), re.IGNORECASE)]
+
+        return {'results': [device.serialize for device in devices]}, 200
 
 
 class NetDevicePortQueryAPI(Resource):
