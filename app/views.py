@@ -577,6 +577,7 @@ class ServerQueryAPI(Resource):
         super(ServerQueryAPI, self).__init__()
 
     def get(self):
+        # TODO
         pass
 
 
@@ -590,6 +591,7 @@ class VirtualMachineQueryAPI(Resource):
         super(VirtualMachineQueryAPI, self).__init__()
 
     def get(self):
+        # TODO
         pass
 
 
@@ -602,7 +604,15 @@ class PatchpanelQueryAPI(Resource):
         super(PatchpanelQueryAPI, self).__init__()
 
     def get(self):
-        pass
+        patches = PatchPanel.query.all()
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if k in args and v:
+                patches = [patch for patch in patches if patch.__getattribute__(k) and
+                           re.search(v, patch.__getattribute__(k), re.IGNORECASE)]
+
+        return {'results': [patch.serialize for patch in patches]}, 200
 
 
 class NetDeviceQueryAPI(Resource):
@@ -636,6 +646,7 @@ class NetDevicePortQueryAPI(Resource):
         super(NetDevicePortQueryAPI, self).__init__()
 
     def get(self):
+        # TODO
         pass
 
 
@@ -647,6 +658,7 @@ class NetworkQueryAPI(Resource):
         super(NetworkQueryAPI, self).__init__()
 
     def get(self):
+        # TODO
         pass
 
 
