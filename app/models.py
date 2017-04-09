@@ -46,6 +46,15 @@ class IpAddress(db.Model):
     ip = db.Column(db.String(32))
     network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
 
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'ip': self.ip,
+            'network_id': self.network_id,
+            'network_ip': self.network_ip.serialize
+        }
+
 
 class Network(db.Model):
     __tablename__ = 'Network'
@@ -100,6 +109,23 @@ class Server(db.Model):
     server_vms = db.relationship('VirtualMachine', backref='server', lazy='dynamic')
     network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
 
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'description': self.description,
+            'serial_number': self.serial_number,
+            'rack': self.rack,
+            'unit': self.unit,
+            'machine_name': self.machine_name,
+            'hostname': self.hostname,
+            'vendor': self.vendor,
+            'operating_system': self.operating_system,
+            'storage': self.storage,
+            'ram': self.ram,
+            'cpu': self.cpu,
+        }
+
 
 class VirtualMachine(db.Model):
     __tablename__ = 'VirtualMachine'
@@ -115,3 +141,18 @@ class VirtualMachine(db.Model):
     network = db.Column(db.String(64))
     server_id = db.Column(db.Integer, db.ForeignKey('Server.id'))
     network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
+
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'description': self.description,
+            'responsible_person': self.responsible_person,
+            'machine_name': self.machine_name,
+            'hostname': self.hostname,
+            'operating_system': self.operating_system,
+            'storage': self.storage,
+            'ram': self.ram,
+            'cpu': self.cpu,
+            'server_id': self.server_id,
+        }
