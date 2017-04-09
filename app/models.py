@@ -45,12 +45,14 @@ class IpAddress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(32))
     network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
+    hostname = db.Column(db.String(64))
 
     @property
     def serialize(self):
         return {
             'id': self.id,
             'ip': self.ip,
+            'hostname': self.hostname,
             'network_id': self.network_id,
         }
 
