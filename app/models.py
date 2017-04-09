@@ -67,9 +67,9 @@ class Network(db.Model):
 
 class PatchPanel(db.Model):
     __tablename__ = 'PatchPanel'
-    patch_id = db.Column(db.String(16), primary_key=True)
+    patch_id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(64))
-    location = db.Column(db.String(64))
+    patch_name = db.Column(db.String(64))
     connected_to = db.Column(db.String(64))
 
     @property
@@ -77,7 +77,7 @@ class PatchPanel(db.Model):
         return {
             'patch_id': self.patch_id,
             'description': self.description,
-            'location': self.location,
+            'patch_name': self.patch_name,
             'connected_to': self.connected_to,
         }
 

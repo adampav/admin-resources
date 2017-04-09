@@ -3,7 +3,7 @@ from app import db
 from flask_restful import Api, Resource, reqparse, fields, marshal
 from werkzeug.exceptions import *
 import re
-from models import NetDevice, NetDevicePorts
+from models import NetDevice, NetDevicePorts, PatchPanel, Network
 
 from datetime import datetime, timedelta
 from flask import jsonify, abort, json, request
@@ -46,11 +46,74 @@ class NetworkListAPI(Resource):
 
 
 class PatchPanelAPI(Resource):
-    pass
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('description', type=str, location='json')
+        self.reqparse.add_argument('patch_name', type=str, location='json')
+        self.reqparse.add_argument('connected_to', type=str, location='json')
+        super(PatchPanelAPI, self).__init__()
+
+    def get(self, patch_id):
+        patch = PatchPanel.query.get(patch_id)
+        if not patch:
+            return {'error': 'No such item'}, 404
+
+        return {'result': patch.serialize}, 200
+
+    def put(self, patch_id):
+        patch = PatchPanel.query.get(patch_id)
+        if not patch:
+            return {'error': 'No such item'}, 404
+
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if v and (patch.__getattribute__(k) != v):
+                patch.__setattr__(k, v)
+
+        db.session.commit()
+
+        return {'results': patch.serialize}, 200
+
+    def delete(self, patch_id):
+        patch = PatchPanel.query.get(patch_id)
+        if not patch:
+            return {'error': 'No such item'}, 404
+
+        db.session.delete(patch)
+        db.session.commit()
+
+        return {'deleted': patch.serialize}, 200
 
 
 class PatchPanelListAPI(Resource):
-    pass
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('description', type=str, location='json', required=True)
+        self.reqparse.add_argument('patch_name', type=str, location='json', required=True)
+        self.reqparse.add_argument('connected_to', type=str, location='json', required=True)
+        super(PatchPanelListAPI, self).__init__()
+
+    def get(self):
+        patches = PatchPanel.query.all()
+        return {"result": [patch.serialize for patch in patches]}
+
+    def post(self):
+        args = self.reqparse.parse_args(strict=True)
+        new_patch = PatchPanel()
+
+        for k, v in args.iteritems():
+            new_patch.__setattr__(k, v)
+
+        db.session.add(new_patch)
+        db.session.commit()
+
+        inserted = PatchPanel.query.order_by('-patch_id').first()
+
+        if not inserted:
+            return {'error': 'No such item'}, 404
+
+        return {'results': inserted.serialize}, 200
 
 
 class NetDevicePortAPI(Resource):
