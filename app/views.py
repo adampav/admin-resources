@@ -73,39 +73,47 @@ class NetDevicePortAPI(Resource):
 
         return {'result': port.serialize}, 200
 
-    def put(self, device_id):
+    def put(self, device_id, port_id):
         device = NetDevice.query.get(device_id)
         if not device:
+            return {'error': 'No such item'}, 404
+
+        port = device.device_ports.filter("id=%s" % str(port_id)).first()
+        if not port:
             return {'error': 'No such item'}, 404
 
         args = self.reqparse.parse_args(strict=True)
 
         for k, v in args.iteritems():
-            if v and (device.__getattribute__(k) != v):
-                device.__setattr__(k, v)
+            if v and (port.__getattribute__(k) != v):
+                port.__setattr__(k, v)
 
         db.session.commit()
 
-        return {'results': device.serialize}, 200
+        return {'results': port.serialize}, 200
 
-    def delete(self, device_id):
+    def delete(self, device_id, port_id):
         device = NetDevice.query.get(device_id)
         if not device:
             return {'error': 'No such item'}, 404
 
-        db.session.delete(device)
+        port = device.device_ports.filter("id=%s" % str(port_id)).first()
+        if not port:
+            return {'error': 'No such item'}, 404
+
+        db.session.delete(port)
         db.session.commit()
 
-        return {'deleted': device.serialize}, 200
+        return {'deleted': port.serialize}, 200
 
 
 class NetDevicePortListAPI(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('device_id', type=int, location='json')
-        self.reqparse.add_argument('connected_to', type=str, location='json')
-        self.reqparse.add_argument('vlan', type=int, location='json')
-        self.reqparse.add_argument('ip', type=str, location='json')
+        self.reqparse.add_argument('device_id', type=int, location='json', required=True)
+        self.reqparse.add_argument('connected_to', type=str, location='json', required=True)
+        self.reqparse.add_argument('vlan', type=int, location='json', required=True)
+        self.reqparse.add_argument('ip', type=str, location='json', required=True)
         super(NetDevicePortListAPI, self).__init__()
 
     def get(self, device_id):
@@ -117,17 +125,20 @@ class NetDevicePortListAPI(Resource):
 
         return {'result': [port.serialize for port in ports]}, 200
 
-    def post(self):
+    def post(self, device_id):
         args = self.reqparse.parse_args(strict=True)
-        new_nd = NetDevice()
+        new_ndp = NetDevicePorts()
+
+        if args['device_id'] != device_id:
+            return {'error': 'Incompatible URL and device_id ForeignKey'}, 404
 
         for k, v in args.iteritems():
-            new_nd.__setattr__(k, v)
+            new_ndp.__setattr__(k, v)
 
-        db.session.add(new_nd)
+        db.session.add(new_ndp)
         db.session.commit()
 
-        inserted = NetDevice.query.order_by('-id').first()
+        inserted = NetDevicePorts.query.order_by('-id').first()
 
         if not inserted:
             return {'error': 'No such item'}, 404
