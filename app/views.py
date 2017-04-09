@@ -579,3 +579,59 @@ api.add_resource(NetDeviceAPI, '/api/netdevices/<int:device_id>')
 api.add_resource(NetDeviceListAPI, '/api/netdevices')
 api.add_resource(NetDevicePortAPI, '/api/netdevices/<int:device_id>/ports/<int:port_id>')
 api.add_resource(NetDevicePortListAPI, '/api/netdevices/<int:device_id>/ports')
+
+
+class ServerQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
+
+
+class VirtualMachineQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
+
+
+class PatchpanelQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
+
+
+class NetDeviceQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
+
+
+class NetDevicePortQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
+
+
+class NetworkQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
+
+
+class IpAddressQueryAPI(Resource):
+    def __init__(self):
+        pass
+
+    def get(self):
+        pass
