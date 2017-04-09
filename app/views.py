@@ -54,7 +54,7 @@ class IpAddressAPI(Resource):
         if not ip:
             return {'error': 'No such item'}, 404
 
-        return {'result': network.serialize}, 200
+        return {'result': {'ip': ip.serialize, 'network': network.serialize}}, 200
 
     def put(self, network_id, address_id):
         network = Network.query.get(network_id)
@@ -69,7 +69,7 @@ class IpAddressAPI(Resource):
         args = self.reqparse.parse_args(strict=True)
 
         for k, v in args.iteritems():
-            if v and (network.__getattribute__(k) != v):
+            if v and (ip.__getattribute__(k) != v):
                 ip.__setattr__(k, v)
 
         db.session.commit()
@@ -89,7 +89,7 @@ class IpAddressAPI(Resource):
         db.session.delete(network)
         db.session.commit()
 
-        return {'deleted': network.serialize}, 200
+        return {'result': {'ip': ip.serialize, 'network': network.serialize}}, 200
 
 
 class IpAddressListAPI(Resource):
@@ -106,14 +106,14 @@ class IpAddressListAPI(Resource):
 
         ips = network.ip_networks.all()
 
-        return {"result": [ip.serialize for ip in ips]}
+        return {"result": {'ips': [ip.serialize for ip in ips], 'network': network.serialize}}
 
     def post(self, network_id):
         args = self.reqparse.parse_args(strict=True)
         new_ip = IpAddress()
 
         if args['network_id'] != network_id:
-            return {'error': 'Incompatible URL and device_id ForeignKey'}, 404
+            return {'error': 'Incompatible URL and network_id ForeignKey'}, 404
 
         for k, v in args.iteritems():
             new_ip.__setattr__(k, v)
@@ -438,7 +438,7 @@ api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
 api.add_resource(ServerListAPI, '/api/servers')
 api.add_resource(VirtualMachineAPI, '/api/vms/<int:vm_id>')
 api.add_resource(VirtualMachineListAPI, '/api/vms')
-api.add_resource(IpAddress, '/api/networks/<int:network_id>/ips/<int:address_id>')
+api.add_resource(IpAddressAPI, '/api/networks/<int:network_id>/ips/<int:address_id>')
 api.add_resource(IpAddressListAPI, '/api/networks/<int:network_id>/ips')
 api.add_resource(NetworkAPI, '/api/networks/<int:network_id>')
 api.add_resource(NetworkListAPI, '/api/networks')
