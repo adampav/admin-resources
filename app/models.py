@@ -46,6 +46,7 @@ class IpAddress(db.Model):
     ip = db.Column(db.String(32))
     network_id = db.Column(db.Integer, db.ForeignKey('Network.id'))
     hostname = db.Column(db.String(64))
+    # TODO add IpAddress type from sqlalchemy_utils
 
     @property
     def serialize(self):
