@@ -1,40 +1,171 @@
 from app import app
 from app import db
-from flask_restful import Api, Resource, reqparse, fields, marshal
-from werkzeug.exceptions import *
+from flask_restful import Api, Resource, reqparse
 import re
-from models import NetDevice, NetDevicePorts, PatchPanel, Network, IpAddress
-
-from datetime import datetime, timedelta
-from flask import jsonify, abort, json, request
+from models import NetDevice, NetDevicePorts, PatchPanel, Network, IpAddress, VirtualMachine, Server
 
 api = Api(app)
 
-# Params for each model that are expected
-query_params = {
-    'vms': [],
-    'servers': [],
-    'network': [],
-    'patchpanel': [],
-    'netdevices': ['vendor', 'device_type', 'serial_number', 'management_ip'],
-    'netdeviceports': ['device_id', 'connected_to', 'vlan', 'ip']
-}
-
-
-class ServerAPI(Resource):
-    pass
-
-
-class ServerListAPI(Resource):
-    pass
-
 
 class VirtualMachineAPI(Resource):
-    pass
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('ip', type=str, location='json')
+        self.reqparse.add_argument('network_id', type=int, location='json')
+        super(VirtualMachineAPI, self).__init__()
+
+    def get(self, server_id, vm_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        vm = server.server_vms.filter("id=%s" % str(vm_id)).first()
+
+        if not vm:
+            return {'error': 'No such item'}, 404
+
+        return {'result': {'vm': vm.serialize, 'server': server.serialize}}, 200
+
+    def put(self, server_id, vm_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        vm = server.ip_networks.filter("id=%s" % str(vm_id)).first()
+
+        if not vm:
+            return {'error': 'No such item'}, 404
+
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if v and (vm.__getattribute__(k) != v):
+                vm.__setattr__(k, v)
+
+        db.session.commit()
+
+        return {'result': {'vm': vm.serialize, 'server': server.serialize}}, 200
+
+    def delete(self, server_id, vm_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        vm = server.ip_networks.filter("id=%s" % str(vm_id)).first()
+
+        if not vm:
+            return {'error': 'No such item'}, 404
+
+        db.session.delete(server)
+        db.session.commit()
+
+        return {'result': {'vm': vm.serialize, 'server': server.serialize}}, 200
 
 
 class VirtualMachineListAPI(Resource):
-    pass
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('vm', type=str, location='json', required=True)
+        self.reqparse.add_argument('network_id', type=int, location='json', required=True)
+        super(VirtualMachineListAPI, self).__init__()
+
+    def get(self, server_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        vms = server.ip_networks.all()
+
+        return {"result": {'vms': [vm.serialize for vm in vms], 'server': server.serialize}}
+
+    def post(self, server_id):
+        args = self.reqparse.parse_args(strict=True)
+        new_vm = VirtualMachine()
+
+        if args['server_id'] != server_id:
+            return {'error': 'Incompatible URL and server_id ForeignKey'}, 404
+
+        for k, v in args.iteritems():
+            new_vm.__setattr__(k, v)
+
+        db.session.add(new_vm)
+        db.session.commit()
+
+        inserted = VirtualMachine.query.order_by('-id').first()
+
+        if not inserted:
+            return {'error': 'No such item'}, 404
+
+        return {'results': inserted.serialize}, 200
+
+
+class ServerAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('subnet', type=str, location='json')
+        self.reqparse.add_argument('vlan', type=int, location='json')
+        super(ServerAPI, self).__init__()
+
+    def get(self, server_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        return {'result': server.serialize}, 200
+
+    def put(self, server_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        args = self.reqparse.parse_args(strict=True)
+
+        for k, v in args.iteritems():
+            if v and (server.__getattribute__(k) != v):
+                server.__setattr__(k, v)
+
+        db.session.commit()
+
+        return {'results': server.serialize}, 200
+
+    def delete(self, server_id):
+        server = Server.query.get(server_id)
+        if not server:
+            return {'error': 'No such item'}, 404
+
+        db.session.delete(server)
+        db.session.commit()
+
+        return {'deleted': server.serialize}, 200
+
+
+class ServerListAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('subnet', type=str, location='json', required=True)
+        self.reqparse.add_argument('vlan', type=int, location='json', required=True)
+        super(ServerListAPI, self).__init__()
+
+    def get(self):
+        servers = Server.query.all()
+        return {"result": [server.serialize for server in servers]}
+
+    def post(self):
+        args = self.reqparse.parse_args(strict=True)
+        new_server = Server()
+
+        for k, v in args.iteritems():
+            new_server.__setattr__(k, v)
+
+        db.session.add(new_server)
+        db.session.commit()
+
+        inserted = Server.query.order_by('-id').first()
+
+        if not inserted:
+            return {'error': 'No such item'}, 404
+
+        return {'results': inserted.serialize}, 200
 
 
 class IpAddressAPI(Resource):
@@ -436,8 +567,8 @@ class NetDeviceListAPI(Resource):
 
 api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
 api.add_resource(ServerListAPI, '/api/servers')
-api.add_resource(VirtualMachineAPI, '/api/vms/<int:vm_id>')
-api.add_resource(VirtualMachineListAPI, '/api/vms')
+api.add_resource(VirtualMachineAPI, '/api/servers/<int:server_id>/vms/<int:vm_id>')
+api.add_resource(VirtualMachineListAPI, '/api/servers/<int:server_id>/vms')
 api.add_resource(IpAddressAPI, '/api/networks/<int:network_id>/ips/<int:address_id>')
 api.add_resource(IpAddressListAPI, '/api/networks/<int:network_id>/ips')
 api.add_resource(NetworkAPI, '/api/networks/<int:network_id>')
