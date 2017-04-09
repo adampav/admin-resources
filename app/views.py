@@ -568,7 +568,13 @@ class NetDeviceListAPI(Resource):
 
 class ServerQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('description', type=str, location='json')
+        self.reqparse.add_argument('serial_number', type=str, location='json')
+        self.reqparse.add_argument('rack', type=str, location='json')
+        self.reqparse.add_argument('hostname', type=str, location='json')
+        self.reqparse.add_argument('operating_system', type=str, location='json')
+        super(ServerQueryAPI, self).__init__()
 
     def get(self):
         pass
@@ -576,7 +582,12 @@ class ServerQueryAPI(Resource):
 
 class VirtualMachineQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('description', type=str, location='json')
+        self.reqparse.add_argument('machine_name', type=str, location='json')
+        self.reqparse.add_argument('hostname', type=str, location='json')
+        self.reqparse.add_argument('operating_system', type=str, location='json')
+        super(VirtualMachineQueryAPI, self).__init__()
 
     def get(self):
         pass
@@ -584,7 +595,11 @@ class VirtualMachineQueryAPI(Resource):
 
 class PatchpanelQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('description', type=str, location='json')
+        self.reqparse.add_argument('patch_name', type=str, location='json')
+        self.reqparse.add_argument('connected_to', type=str, location='json')
+        super(PatchpanelQueryAPI, self).__init__()
 
     def get(self):
         pass
@@ -592,7 +607,12 @@ class PatchpanelQueryAPI(Resource):
 
 class NetDeviceQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('vendor', type=str, location='json')
+        self.reqparse.add_argument('device_type', type=str, location='json')
+        self.reqparse.add_argument('serial_number', type=str, location='json')
+        self.reqparse.add_argument('management_ip', type=str, location='json')
+        super(NetDeviceQueryAPI, self).__init__()
 
     def get(self):
         pass
@@ -600,7 +620,12 @@ class NetDeviceQueryAPI(Resource):
 
 class NetDevicePortQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('device_id', type=str, location='json')
+        self.reqparse.add_argument('connected_to', type=str, location='json')
+        self.reqparse.add_argument('vlan', type=str, location='json')
+        self.reqparse.add_argument('ip', type=str, location='json')
+        super(NetDevicePortQueryAPI, self).__init__()
 
     def get(self):
         pass
@@ -608,7 +633,10 @@ class NetDevicePortQueryAPI(Resource):
 
 class NetworkQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('subnet', type=str, location='json')
+        self.reqparse.add_argument('vlan', type=str, location='json')
+        super(NetworkQueryAPI, self).__init__()
 
     def get(self):
         pass
@@ -616,11 +644,21 @@ class NetworkQueryAPI(Resource):
 
 class IpAddressQueryAPI(Resource):
     def __init__(self):
-        pass
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('ip', type=str, location='json')
+        self.reqparse.add_argument('network_id', type=str, location='json')
+        super(IpAddressQueryAPI, self).__init__()
 
     def get(self):
-        pass
-
+        ips = IpAddress.query.all()
+        args = self.reqparse.parse_args(strict=True)
+        networks = []
+        if 'ip' in args and args['ip']:
+            ips = [ip for ip in ips if re.search(args['ip'], ip.ip, re.IGNORECASE)]
+            # TODO consider whether to fix this
+            networks = [ip.network_ip for ip in ips if ip.network_ip.id not in networks]
+        return {'results': {'ips': [ip.serialize for ip in ips],
+                            'network': [network.serialize for network in networks]}}, 200
 
 api.add_resource(ServerAPI, '/api/servers/<int:server_id>')
 api.add_resource(ServerListAPI, '/api/servers')
